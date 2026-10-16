@@ -1,0 +1,45 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2112                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      sampleDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Extraction de k le long de l'axe du sillage, pour comparaison avec
+// Rogan et al. (2016), "The turbulent wake of a monopile foundation".
+//
+// Loi de reference : TKE/(rho*u0^2) = 0.6 * x*^(-1.1), avec x* = x/D
+// Validite : 2.5 <= x* <= 27.  Ici D = 0.5 m.
+// Ligne a y = 0 (axe) et z = -0.5 m (subsurface, comme les mesures ADV)
+
+type            sets;
+libs            ("libsampling.so");
+
+interpolationScheme cellPoint;
+
+setFormat       raw;
+
+fields          ( k U );
+
+sets
+(
+    axeSillage
+    {
+        type        uniform;
+        axis        x;
+        start       (0.25 0 -1.0);
+        end         (7.0  0 -1.0);
+        nPoints     270;
+    }
+);
+
+// ************************************************************************* //

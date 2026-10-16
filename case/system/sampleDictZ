@@ -1,0 +1,17 @@
+type            sets;
+libs            ("libsampling.so");
+interpolationScheme cellPoint;
+setFormat       raw;
+fields          ( k );
+
+sets
+(
+    profilZ_x5D
+    {
+        type        uniform;
+        axis        z;
+        start       (2.5 0 -2.4);
+        end         (2.5 0 -0.05);
+        nPoints     50;
+    }
+);

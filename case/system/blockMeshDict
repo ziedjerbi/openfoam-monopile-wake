@@ -1,0 +1,111 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2112                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Echelle modele : similitude de Froude, lambda = 1/10
+//   reel   : L = 100 m, W = 50 m, H = 25 m, d = 5 m,   U = 1 m/s
+//   modele : L = 10 m,  W = 5 m,  H = 2.5 m, d = 0.5 m, U = 0.3162 m/s
+//
+// x de -2.5 a 7.5  -> 5d en amont, 15d en aval
+// y de -2.5 a 2.5  -> largeur 5 m centree
+// z de -2.5 a 0    -> z = 0 est la surface libre, z = -2.5 le fond
+//
+// Cellules : 10/100 = 0.1 m en x, 5/50 = 0.1 m en y, 2.5/13 = 0.192 m en z
+
+convertToMeters 1;
+
+vertices
+(
+    (-2.5 -2.5 -2.5)   // 0  : inlet,  front, fond
+    (-2.5 -2.5  0  )   // 1  : inlet,  front, surface
+    (-2.5  2.5  0  )   // 2  : inlet,  back,  surface
+    (-2.5  2.5 -2.5)   // 3  : inlet,  back,  fond
+    ( 7.5 -2.5 -2.5)   // 4  : outlet, front, fond
+    ( 7.5 -2.5  0  )   // 5  : outlet, front, surface
+    ( 7.5  2.5  0  )   // 6  : outlet, back,  surface
+    ( 7.5  2.5 -2.5)   // 7  : outlet, back,  fond
+);
+
+blocks
+(
+    hex (0 4 7 3 1 5 6 2) (100 50 13) simpleGrading (1 1 1)
+);
+
+edges
+(
+);
+
+boundary
+(
+    inlet
+    {
+        type patch;
+        faces
+        (
+            (0 1 2 3)
+        );
+    }
+
+    lowerWall
+    {
+        type wall;
+        faces
+        (
+            (7 4 0 3)
+        );
+    }
+
+    front
+    {
+        type patch;
+        faces
+        (
+            (4 5 1 0)
+        );
+    }
+
+    upperWall
+    {
+        type patch;
+        faces
+        (
+            (5 6 2 1)
+        );
+    }
+
+    back
+    {
+        type patch;
+        faces
+        (
+            (7 3 2 6)
+        );
+    }
+
+    outlet
+    {
+        type patch;
+        faces
+        (
+            (7 6 5 4)
+        );
+    }
+);
+
+mergePatchPairs
+(
+);
+
+// ************************************************************************* //
