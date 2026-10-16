@@ -15,7 +15,7 @@ La géométrie (`cylinder.stl`), les schémas numériques (`fvSchemes`) et plusi
 - Ajout de l'échantillonnage du sillage (`sampleDict`, `sampleDictZ`).
 - Calcul de 300 s simulées sur 4 processus (environ 9 h).
 - Moyenne de k sur 20 instants, ajustement en loi de puissance et comparaison à la loi expérimentale de Rogan et al. (2016) avec un script Python (`scripts/plot_rogan.py`).
-- Analyse de l'écart obtenu, ci-dessous.
+- Analyse de l'écart obtenu, puis estimation de la part résolue de l'énergie turbulente pour tester l'interprétation (`scripts/tke_totale.py`).
 
 ---
 
@@ -61,11 +61,29 @@ Ajustement sur 2,5 ≤ x/D ≤ 14 :
 
 L'exposant simulé est environ **trois fois plus faible** : la décroissance de k dans le sillage est beaucoup trop lente. À x/D = 4, l'écart est d'un **facteur 3,2**.
 
-**Statut : comparaison technique, pas une validation.** Le modèle, dans cette configuration, ne reproduit pas la décroissance mesurée.
+**Statut : comparaison technique, pas une validation.** Le k modélisé seul ne reproduit pas la décroissance mesurée (voir ci-dessous).
 
-### Piste d'interprétation (non démontrée)
+### Test de la piste d'interprétation : ajout de la part résolue
 
-Le k d'un modèle URANS représente seulement l'énergie turbulente **modélisée**. Une partie des fluctuations, en particulier le lâcher tourbillonnaire, est **résolue** dans le champ U. Elle n'est donc pas incluse dans la moyenne de k. Les mesures, elles, contiennent la TKE totale. Les profils de U sur les mêmes 20 instants (`postProcessing/sampleDict/*/axeSillage_U.xy`) permettraient d'estimer cette part résolue. Ce calcul n'est pas encore fait.
+Le k d'un modèle URANS représente seulement l'énergie turbulente **modélisée**. Une partie des fluctuations, en particulier le lâcher tourbillonnaire, est **résolue** dans le champ U. Elle n'est donc pas incluse dans la moyenne de k. Les mesures, elles, contiennent la TKE totale. J'ai donc estimé cette part résolue à partir des profils de U sur les mêmes 20 instants (`postProcessing/sampleDict/*/axeSillage_U.xy`) :
+
+**k_total = ⟨k_modélisé⟩ + k_résolu**, avec k_résolu = ½ [σ²(Ux) + σ²(Uy) + σ²(Uz)], les variances étant calculées sur les 20 instants (`scripts/tke_totale.py`, résultats dans `data/tke_totale_z1.txt`).
+
+![k modélisé et k total estimé](figures/tke_totale.png)
+
+| | Exposant | Rapport Rogan / simulation à x/D = 4 |
+|---|---|---|
+| Rogan et al. (2016) | −1,10 | |
+| k modélisé seul (20 instants) | −0,36 | 3,2 |
+| k total estimé (20 instants) | −1,28 | 0,55 |
+| k total estimé (10 premiers instants) | −1,37 | 0,53 |
+| k total estimé (10 derniers instants) | −1,25 | 0,53 |
+
+À x/D = 4, la part résolue représente environ **84 %** de k total.
+
+**Lecture.** Une fois la part résolue ajoutée, la décroissance simulée (exposant −1,28) se rapproche nettement de la décroissance mesurée (−1,10), et le résultat reste stable quand on ne garde que la moitié des instants. L'essentiel de l'écart initial venait donc de la comparaison d'un k modélisé seul à une TKE mesurée totale. Le niveau est en revanche surestimé d'un facteur 1,8 environ. Causes possibles, non démontrées ici : un lâcher tourbillonnaire trop régulier et trop intense en URANS avec une turbulence ambiante faible, la différence d'échelle (1:10 contre 1:50), et un échantillonnage grossier (20 instants espacés de 5 s, pour une période de lâcher d'environ 8 s estimée avec St ≈ 0,2).
+
+**Statut : estimation technique approchée, pas une validation.**
 
 ---
 
@@ -86,9 +104,9 @@ Le k d'un modèle URANS représente seulement l'énergie turbulente **modélisé
 
     case/            0/, constant/, system/ (sans le maillage polyMesh, régénéré par blockMesh puis snappyHexMesh)
     postProcessing/  efforts, y+, profils de k et U dans le sillage
-    data/            moyennes de k (k_moyen_z1.txt : z = -1,0 m ; k_moyen.txt : z = -0,5 m)
-    scripts/         plot_rogan.py
-    figures/         comparaison_rogan.png
+    data/            moyennes de k (k_moyen_z1.txt : z = -1,0 m ; k_moyen.txt : z = -0,5 m ; tke_totale_z1.txt : k modélisé, résolu et total)
+    scripts/         plot_rogan.py, tke_totale.py
+    figures/         comparaison_rogan.png, tke_totale.png
 
 Les résultats de calcul complets (environ 16 Go) ne sont pas publiés.
 
@@ -109,7 +127,7 @@ for t in $(seq 205 5 300); do postProcess -func sampleDict -time $t; done
 cat postProcessing/sampleDict/*/axeSillage_k.xy \
   | awk '{s[$1]+=$2; n[$1]++} END {for (x in s) printf "%.6f %.8f\n", x, s[x]/n[x]}' \
   | sort -g > ../data/k_moyen_z1.txt
-cd .. && python3 scripts/plot_rogan.py
+cd .. && python3 scripts/plot_rogan.py && python3 scripts/tke_totale.py
 ```
 
 ---
